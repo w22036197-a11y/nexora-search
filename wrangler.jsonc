@@ -1,0 +1,18 @@
+
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "nexora-search",
+  "main": "worker/index.js",
+  "compatibility_date": "2026-11-24",
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "nexora-database",
+      "database_id": "07c10cb7-1652-4f82-be43-44adae54fd1f"
+    }
+  ]
+}
