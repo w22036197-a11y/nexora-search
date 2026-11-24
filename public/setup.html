@@ -1,0 +1,94 @@
+
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nexora Search – Owner Setup</title>
+<style>
+*{box-sizing:border-box}
+body{
+  margin:0;min-height:100vh;display:grid;place-items:center;
+  background:#0b1020;color:white;font-family:Arial,sans-serif;padding:20px
+}
+main{
+  width:100%;max-width:430px;background:#151d32;
+  padding:30px;border-radius:18px;border:1px solid #303c59
+}
+h1{margin-top:0}
+p{color:#aab5ca;line-height:1.5}
+input{
+  width:100%;padding:14px;margin:9px 0 16px;
+  border-radius:9px;border:1px solid #38435d;
+  background:#0b1020;color:white;font-size:16px
+}
+button{
+  width:100%;padding:15px;border:0;border-radius:9px;
+  background:#5575ed;color:white;font-weight:bold;font-size:16px;
+  cursor:pointer
+}
+#message{margin-top:18px;overflow-wrap:anywhere}
+</style>
+</head>
+<body>
+<main>
+<h1>✦ Nexora Search</h1>
+<p>Einmalige Einrichtung des Owner-Kontos.</p>
+
+<form id="setupForm">
+<label>Einrichtungsschlüssel</label>
+<input id="setupKey" type="password" required autocomplete="off">
+
+<label>Benutzername</label>
+<input id="username" required minlength="3" maxlength="32"
+ pattern="[A-Za-z0-9_-]+" autocomplete="username">
+
+<label>Passwort (mindestens 14 Zeichen)</label>
+<input id="password" type="password" required
+ minlength="14" maxlength="128" autocomplete="new-password">
+
+<button type="submit">Owner-Konto erstellen</button>
+</form>
+
+<p id="message" role="status"></p>
+</main>
+
+<script>
+document.getElementById("setupForm").addEventListener("submit", async (event) => {
+  event.preventDefault();
+
+  const message = document.getElementById("message");
+  const button = event.submitter;
+  button.disabled = true;
+  message.textContent = "Einrichtung wird geprüft ...";
+
+  try {
+    const response = await fetch("/api/setup-owner", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-owner-setup-key": document.getElementById("setupKey").value
+      },
+      body: JSON.stringify({
+        username: document.getElementById("username").value,
+        password: document.getElementById("password").value
+      })
+    });
+
+    const result = await response.json();
+
+    if (response.ok && result.success) {
+      message.textContent = "Owner-Konto erfolgreich erstellt!";
+      document.getElementById("setupForm").reset();
+    } else {
+      message.textContent = "Fehler: " + (result.error || "Einrichtung fehlgeschlagen");
+      button.disabled = false;
+    }
+  } catch {
+    message.textContent = "Verbindungsfehler. Bitte später erneut versuchen.";
+    button.disabled = false;
+  }
+});
+</script>
+</body>
+</html>
