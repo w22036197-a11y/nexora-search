@@ -78,7 +78,12 @@ export default {
 
       try {
         const suppliedKey = request.headers.get("x-owner-setup-key") || "";
+const expectedKey = env.OWNER_SETUP_KEY;
 
+if (!expectedKey || !suppliedKey ||
+    !await sameSecret(suppliedKey, expectedKey)) {
+  return Response.json({ error: "Unauthorized" }, { status: 401 });
+}
         if (!await sameSecret(suppliedKey, env.OWNER_SETUP_KEY || "")) {
           return Response.json({ error: "Unauthorized" }, { status: 401 });
         }
