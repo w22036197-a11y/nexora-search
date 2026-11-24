@@ -1,0 +1,62 @@
+
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nexora Search</title>
+<style>
+*{box-sizing:border-box}
+body{
+ margin:0;background:#0b1020;color:white;
+ font-family:Arial,sans-serif;min-height:100vh
+}
+header{
+ padding:24px 7%;border-bottom:1px solid #273047;
+ font-size:24px;font-weight:bold
+}
+main{
+ max-width:850px;margin:100px auto;padding:20px;
+ text-align:center
+}
+h1{font-size:clamp(36px,6vw,56px)}
+p{color:#aab5ca;line-height:1.6}
+.search{display:flex;gap:10px;margin-top:35px;flex-wrap:wrap}
+input{
+ flex:1;min-width:200px;padding:18px;
+ border-radius:12px;border:1px solid #38435d;
+ background:#151d32;color:white;font-size:16px
+}
+button{
+ padding:18px 25px;border:0;border-radius:12px;
+ background:#5575ed;color:white;cursor:pointer;
+ font-weight:bold
+}
+#result{
+ margin-top:30px;padding:20px;border-radius:12px;
+ background:#151d32;color:#aab5ca;display:none
+}
+</style>
+</head>
+<body>
+<header>✦ Nexora Search</header>
+<main>
+<h1>Entdecke mehr.</h1>
+<p>Deine intelligente Plattform für Recherche und öffentliche Informationen.</p>
+<div class="search">
+<input id="query" placeholder="Frage oder Telefonnummer eingeben...">
+<button onclick="search()">Suchen</button>
+</div>
+<div id="result"></div>
+</main>
+<script>
+async function search(){
+ const query=document.getElementById("query").value.trim();
+ const result=document.getElementById("result");
+ if(!query)return;
+ result.style.display="block";
+ result.textContent="Die Recherchefunktion wird vorbereitet.";
+}
+</script>
+</body>
+</html>
