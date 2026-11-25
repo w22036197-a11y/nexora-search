@@ -255,9 +255,6 @@ await env.DB.prepare(`
   request.headers.get("CF-Connecting-IP") || "Unbekannt"
 ).run();
 
-          (id, admin_id, token_hash, expires_at)
-          VALUES (?, ?, ?, datetime('now', '+7 days'))
-        `).bind(sessionId, admin.id, tokenHash).run();
 
         return json({
           success: true,
