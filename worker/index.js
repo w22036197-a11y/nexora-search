@@ -305,6 +305,56 @@ export default {
       }
     }
 
+    // Geschützte Dashboard-Daten
+    if (url.pathname === "/api/admin/dashboard") {
+      if (request.method !== "GET") {
+        return json({ error: "Method not allowed" }, 405);
+      }
+
+      try {
+        const admin = await getAdmin(request, env);
+
+        if (!admin) {
+          return json({ error: "Nicht angemeldet" }, 401);
+        }
+
+        if (!["owner", "admin"].includes(admin.role)) {
+          return json({ error: "Keine Berechtigung" }, 403);
+        }
+
+        const [adminStats, sessionStats] = await Promise.all([
+          env.DB.prepare(`
+            SELECT
+              COUNT(*) AS total,
+              SUM(CASE WHEN active = 1 THEN 1 ELSE 0 END) AS active
+            FROM admins
+          `).first(),
+
+          env.DB.prepare(`
+            SELECT COUNT(*) AS total
+            FROM admin_sessions
+            WHERE expires_at > datetime('now')
+          `).first()
+        ]);
+
+        return json({
+          success: true,
+          admin: {
+            username: admin.username,
+            role: admin.role
+          },
+          statistics: {
+            totalAdmins: adminStats.total,
+            activeAdmins: adminStats.active || 0,
+            activeSessions: sessionStats.total
+          }
+        });
+      } catch {
+        return json({ error: "Dashboard konnte nicht geladen werden" }, 500);
+      }
+    }
+
+
     return env.ASSETS.fetch(request);
   }
 };
