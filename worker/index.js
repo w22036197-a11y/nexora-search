@@ -137,7 +137,16 @@ if (!expectedKey || !suppliedKey ||
         }, { status: 400 });
       }
     }
+if (url.pathname === "/api/debug-setup") {
+  const assetUrl = new URL("/setup.html", request.url);
+  const response = await env.ASSETS.fetch(new Request(assetUrl));
 
+  return Response.json({
+    status: response.status,
+    contentType: response.headers.get("content-type"),
+    preview: (await response.clone().text()).slice(0, 120)
+  });
+}
     return env.ASSETS.fetch(request);
   }
 };
