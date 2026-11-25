@@ -237,12 +237,13 @@ export default {
           return json({ error: "Invalid username or password" }, 401);
         }
 
-        const token = randomToken();
-        const tokenHash = await hashToken(token);
-        const sessionId = crypto.randomUUID();
+       
+const token = randomToken();
+const tokenHash = await hashToken(token);
+const sessionId = crypto.randomUUID();
+const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
 
-        await env.DB.prepare(`
-          await env.DB.prepare(`
+await env.DB.prepare(`
   INSERT INTO admin_sessions
     (id, admin_id, token_hash, expires_at, ip_address)
   VALUES (?, ?, ?, ?, ?)
@@ -253,6 +254,7 @@ export default {
   expiresAt,
   request.headers.get("CF-Connecting-IP") || "Unbekannt"
 ).run();
+
           (id, admin_id, token_hash, expires_at)
           VALUES (?, ?, ?, datetime('now', '+7 days'))
         `).bind(sessionId, admin.id, tokenHash).run();
