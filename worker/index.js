@@ -3,6 +3,10 @@ const ITERATIONS = 100000;
 const SESSION_DAYS = 7;
 const COOKIE_NAME = "nexora_session";
 
+const AREA_CODE_CACHE_KEY = new Request(
+  "https://nexora-internal-cache.invalid/ortsvorwahlen-v1"
+);
+
 function toBase64Url(bytes) {
   let binary = "";
   for (const byte of bytes) binary += String.fromCharCode(byte);
@@ -131,6 +135,135 @@ async function getAdmin(request, env) {
   `).bind(tokenHash).first();
 }
 
+/*
+  Ortsvorwahldaten laden und zwischenspeichern.
+  Die Quelle veröffentlicht die deutschen Ortsnetze
+  auf acht Unterseiten (02 bis 09).
+*/
+
+async function loadAreaCodes() {
+  const cache = caches.default;
+
+  const cached = await cache.match(AREA_CODE_CACHE_KEY);
+
+  if (cached) {
+    return await cached.json();
+  }
+
+  const pageNumbers = ["2", "3", "4", "5", "6", "7", "8", "9"];
+
+  const pageResults = await Promise.all(
+    pageNumbers.map(async pageNumber => {
+      const pageUrl =
+        `https://netzikon.net/misc/onkz/onkz-${pageNumber}.html`;
+
+      const response = await fetch(pageUrl, {
+        headers: {
+          "Accept": "text/html"
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`Vorwahlseite ${pageNumber} konnte nicht geladen werden`);
+      }
+
+      const rows = [];
+
+      let currentRow = null;
+      let currentCell = "";
+
+      const rewriter = new HTMLRewriter()
+        .on("tr", {
+          element(element) {
+            currentRow = [];
+
+            element.onEndTag(() => {
+              if (currentRow && currentRow.length >= 2) {
+                const code = currentRow[0]
+                  .replace(/\s/g, "")
+                  .trim();
+
+                const name = currentRow[1]
+                  .replace(/\s+/g, " ")
+                  .trim();
+
+                if (/^0\d{2,5}$/.test(code) && name) {
+                  rows.push({ code, name });
+                }
+              }
+
+              currentRow = null;
+            });
+          }
+        })
+        .on("td", {
+          element(element) {
+            currentCell = "";
+
+            element.onEndTag(() => {
+              if (currentRow) {
+                currentRow.push(currentCell);
+              }
+            });
+          },
+
+          text(text) {
+            if (currentRow) {
+              currentCell += text.text;
+            }
+          }
+        });
+
+      const transformed = rewriter.transform(response);
+      await transformed.text();
+
+      return rows;
+    })
+  );
+
+  const unique = new Map();
+
+  for (const rows of pageResults) {
+    for (const entry of rows) {
+      unique.set(entry.code, entry);
+    }
+  }
+
+  const areaCodes = Array.from(unique.values());
+
+  // Bei unvollständigen Daten nichts zwischenspeichern.
+  if (areaCodes.length < 4500) {
+    throw new Error("Das Vorwahlverzeichnis ist unvollständig");
+  }
+
+  areaCodes.sort((a, b) => b.code.length - a.code.length);
+
+  const cacheResponse = new Response(
+    JSON.stringify(areaCodes),
+    {
+      headers: {
+        "Content-Type": "application/json",
+        "Cache-Control": "public, max-age=86400"
+      }
+    }
+  );
+
+  await cache.put(AREA_CODE_CACHE_KEY, cacheResponse);
+
+  return areaCodes;
+}
+
+async function findAreaCode(prefix) {
+  const areaCodes = await loadAreaCodes();
+
+  // Längste passende Vorwahl zuerst.
+  const match = areaCodes.find(entry =>
+    prefix.startsWith(entry.code)
+  );
+
+  return match || null;
+}
+
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
@@ -149,6 +282,49 @@ export default {
         return json({
           success: false,
           database: "unavailable"
+        }, 503);
+      }
+    }
+
+    // Öffentliche Ortsvorwahl-Suche
+    if (url.pathname === "/api/phone/area") {
+      if (request.method !== "GET") {
+        return json({ error: "Method not allowed" }, 405);
+      }
+
+      const prefix = String(url.searchParams.get("prefix") || "");
+
+      if (!/^0\d{2,5}$/.test(prefix)) {
+        return json({
+          error: "Ungültiger Vorwahl-Präfix"
+        }, 400);
+      }
+
+      try {
+        const match = await findAreaCode(prefix);
+
+        if (!match) {
+          return json({
+            success: true,
+            found: false,
+            message: "Kein passender Ortsnetzbereich gefunden"
+          });
+        }
+
+        return json({
+          success: true,
+          found: true,
+          areaCode: match.code,
+          city: match.name,
+          source: "Netzikon / Bundesnetzagentur",
+          dataStand: "30.07.2026"
+        });
+      } catch (error) {
+        console.error("Ortsvorwahl-Suche fehlgeschlagen:", error);
+
+        return json({
+          success: false,
+          error: "Ortsvorwahldaten momentan nicht verfügbar"
         }, 503);
       }
     }
