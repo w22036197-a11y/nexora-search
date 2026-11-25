@@ -98,17 +98,28 @@ input{width:100%;padding:13px;margin:8px 0 15px;background:#0d1426;border:1px so
       <button class="refresh" id="refreshButton">↻ Aktualisieren</button>
     </div>
 
-    <div class="stats">
-     <button class="stat" id="sessionsCard" type="button"
-style="text-align:left;color:inherit;cursor:pointer">
-  <div class="stat-label">Aktive Sitzungen</div>
-  <div class="stat-value" id="activeSessions">–</div>
-  <div class="stat-label">Klicken für Sitzungsübersicht →</div>
-</button>
-      <div class="stat">
-        <div class="stat-label">Aktive Administratoren</div>
-        <div class="stat-value" id="activeAdmins">–</div>
-      </div>
+    
+<div class="stats">
+
+  <div class="stat">
+    <div class="stat-label">Administratoren insgesamt</div>
+    <div class="stat-value" id="totalAdmins">–</div>
+  </div>
+
+  <div class="stat">
+    <div class="stat-label">Aktive Administratoren</div>
+    <div class="stat-value" id="activeAdmins">–</div>
+  </div>
+
+  <button class="stat" id="sessionsCard" type="button"
+    style="text-align:left;color:inherit;cursor:pointer">
+    <div class="stat-label">Aktive Sitzungen</div>
+    <div class="stat-value" id="activeSessions">–</div>
+    <div class="stat-label">Klicken für Sitzungsübersicht →</div>
+  </button>
+
+</div>
+
       <div class="stat">
         <div class="stat-label">Aktive Sitzungen</div>
         <div class="stat-value" id="activeSessions">–</div>
