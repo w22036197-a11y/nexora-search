@@ -364,6 +364,45 @@ await env.DB.prepare(`
     }
 
 
+    // Aktive Sitzungen – ausschließlich für Owner
+    if (url.pathname === "/api/admin/sessions") {
+      if (request.method !== "GET") {
+        return json({ error: "Method not allowed" }, 405);
+      }
+
+      try {
+        const admin = await getAdmin(request, env);
+
+        if (!admin) {
+          return json({ error: "Nicht angemeldet" }, 401);
+        }
+
+        if (admin.role !== "owner") {
+          return json({ error: "Nur der Owner darf Sitzungen ansehen" }, 403);
+        }
+
+        const result = await env.DB.prepare(`
+          SELECT
+            admins.username,
+            admin_sessions.ip_address,
+            admin_sessions.created_at,
+            admin_sessions.expires_at
+          FROM admin_sessions
+          JOIN admins ON admins.id = admin_sessions.admin_id
+          WHERE admin_sessions.expires_at > datetime('now')
+            AND admins.active = 1
+          ORDER BY admin_sessions.created_at DESC
+        `).all();
+
+        return json({
+          success: true,
+          sessions: result.results || []
+        });
+      } catch {
+        return json({ error: "Sitzungen konnten nicht geladen werden" }, 500);
+      }
+    }
+
     return env.ASSETS.fetch(request);
   }
 };
