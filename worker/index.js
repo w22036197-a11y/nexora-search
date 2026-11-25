@@ -242,7 +242,17 @@ export default {
         const sessionId = crypto.randomUUID();
 
         await env.DB.prepare(`
-          INSERT INTO admin_sessions
+          await env.DB.prepare(`
+  INSERT INTO admin_sessions
+    (id, admin_id, token_hash, expires_at, ip_address)
+  VALUES (?, ?, ?, ?, ?)
+`).bind(
+  sessionId,
+  admin.id,
+  tokenHash,
+  expiresAt,
+  request.headers.get("CF-Connecting-IP") || "Unbekannt"
+).run();
           (id, admin_id, token_hash, expires_at)
           VALUES (?, ?, ?, datetime('now', '+7 days'))
         `).bind(sessionId, admin.id, tokenHash).run();
