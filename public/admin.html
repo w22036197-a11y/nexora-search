@@ -99,10 +99,12 @@ input{width:100%;padding:13px;margin:8px 0 15px;background:#0d1426;border:1px so
     </div>
 
     <div class="stats">
-      <div class="stat">
-        <div class="stat-label">Administratoren insgesamt</div>
-        <div class="stat-value" id="totalAdmins">–</div>
-      </div>
+     <button class="stat" id="sessionsCard" type="button"
+style="text-align:left;color:inherit;cursor:pointer">
+  <div class="stat-label">Aktive Sitzungen</div>
+  <div class="stat-value" id="activeSessions">–</div>
+  <div class="stat-label">Klicken für Sitzungsübersicht →</div>
+</button>
       <div class="stat">
         <div class="stat-label">Aktive Administratoren</div>
         <div class="stat-value" id="activeAdmins">–</div>
@@ -261,5 +263,115 @@ async function checkSession() {
 
 checkSession();
 </script>
+  
+<div id="sessionsModal" class="hidden" style="
+position:fixed;inset:0;background:#000b;z-index:1000;
+display:grid;place-items:center;padding:20px">
+
+  <div style="
+  background:#151f35;border:1px solid #405071;
+  border-radius:16px;padding:25px;width:100%;
+  max-width:650px;max-height:85vh;overflow:auto">
+
+    <div id="warningContent">
+      <h2>⚠️ Datenschutz-Warnung</h2>
+      <p>Du möchtest vollständige IP-Adressen und Anmeldedaten ansehen.</p>
+      <p>Diese Daten sind personenbezogen und dürfen nur für berechtigte Sicherheitszwecke verwendet werden.</p>
+      <p>Bitte gehe vertraulich damit um.</p>
+      <button class="primary" id="confirmSessions">Ich verstehe – fortfahren</button>
+      <button class="refresh" id="cancelSessions">Abbrechen</button>
+    </div>
+
+    <div id="sessionsContent" class="hidden">
+      <h2>Aktive Sitzungen</h2>
+      <p id="sessionsMessage" class="notice">Daten werden geladen …</p>
+      <div id="sessionsList"></div>
+      <button class="refresh" id="closeSessions">Schließen</button>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const sessionsModal = document.getElementById("sessionsModal");
+
+document.getElementById("sessionsCard").addEventListener("click", () => {
+  const role = document.getElementById("accountRole").textContent;
+
+  if (role !== "OWNER") {
+    alert("Nur der Owner darf diese Übersicht öffnen.");
+    return;
+  }
+
+  document.getElementById("warningContent").classList.remove("hidden");
+  document.getElementById("sessionsContent").classList.add("hidden");
+  sessionsModal.classList.remove("hidden");
+});
+
+document.getElementById("cancelSessions").addEventListener("click", () => {
+  sessionsModal.classList.add("hidden");
+});
+
+document.getElementById("closeSessions").addEventListener("click", () => {
+  sessionsModal.classList.add("hidden");
+});
+
+document.getElementById("confirmSessions").addEventListener("click", async () => {
+  document.getElementById("warningContent").classList.add("hidden");
+  document.getElementById("sessionsContent").classList.remove("hidden");
+
+  const message = document.getElementById("sessionsMessage");
+  const list = document.getElementById("sessionsList");
+
+  message.textContent = "Sitzungen werden geladen …";
+  list.replaceChildren();
+
+  try {
+    const response = await fetch("/api/admin/sessions", {
+      credentials: "same-origin"
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || "Zugriff verweigert");
+    }
+
+    if (!data.sessions.length) {
+      message.textContent = "Keine aktiven Sitzungen gefunden.";
+      return;
+    }
+
+    message.textContent = data.sessions.length + " aktive Sitzungen gefunden.";
+
+    data.sessions.forEach(session => {
+      const card = document.createElement("div");
+      card.style.cssText =
+        "background:#202d49;padding:15px;margin:12px 0;border-radius:10px";
+
+      const username = document.createElement("strong");
+      username.textContent = "Benutzer: " + session.username;
+
+      const ip = document.createElement("p");
+      ip.textContent = "IP-Adresse: " + (session.ip_address || "Unbekannt");
+
+      const created = document.createElement("p");
+      created.textContent = "Angemeldet: " + session.created_at;
+
+      const expires = document.createElement("p");
+      expires.textContent = "Läuft ab: " + session.expires_at;
+
+      card.append(username, ip, created, expires);
+      list.appendChild(card);
+    });
+
+  } catch (error) {
+    message.textContent = error.message;
+  }
+});
+</script>
+</body>
+</html>
+
 </body>
 </html>
