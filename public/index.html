@@ -51,9 +51,7 @@ p{color:#aab5ca;line-height:1.6}
  text-align:left
 }
 
-.iti{
- width:100%
-}
+.iti{width:100%}
 
 input{
  width:100%;
@@ -82,9 +80,7 @@ input{
  border:1px solid #38435d
 }
 
-.iti__country{
- color:white
-}
+.iti__country{color:white}
 
 .iti__country:hover,
 .iti__country.iti__highlight{
@@ -113,6 +109,7 @@ button{
 }
 
 button:hover{background:#7190ff}
+button:disabled{opacity:.6;cursor:wait}
 
 #result{
  margin-top:30px;
@@ -220,6 +217,25 @@ function escapeHTML(value) {
  })[char]);
 }
 
+function getPhoneType(type) {
+ const types = {
+  0: "Festnetz",
+  1: "Mobilfunk",
+  2: "Festnetz oder Mobilfunk",
+  3: "Kostenfreie Nummer",
+  4: "Premium-Nummer",
+  5: "Gemeinschaftsanschluss",
+  6: "VoIP / Internettelefonie",
+  7: "Persönliche Nummer",
+  8: "Pager",
+  9: "Universelle Zugangsnummer",
+  10: "Mailboxnummer",
+  "-1": "Unbekannt"
+ };
+
+ return types[type] || "Unbekannt";
+}
+
 document.getElementById("searchForm").addEventListener("submit", async event => {
  event.preventDefault();
 
@@ -236,6 +252,7 @@ document.getElementById("searchForm").addEventListener("submit", async event => 
 
   const country = phoneInput.getSelectedCountryData();
   const valid = phoneInput.isValidNumber();
+
   const international = valid
    ? phoneInput.getNumber()
    : number;
@@ -245,8 +262,16 @@ document.getElementById("searchForm").addEventListener("submit", async event => 
    ? "+" + country.dialCode
    : "Nicht erkannt";
 
+  let phoneType = "Nicht bestimmbar";
+
+  if (valid) {
+   phoneType = getPhoneType(phoneInput.getNumberType());
+  }
+
   result.innerHTML = `
-   <div class="result-title">Ergebnis der Telefonnummern-Prüfung</div>
+   <div class="result-title">
+    Ergebnis der Telefonnummern-Prüfung
+   </div>
 
    <div class="result-row">
     <strong>Land:</strong>
@@ -264,6 +289,11 @@ document.getElementById("searchForm").addEventListener("submit", async event => 
    </div>
 
    <div class="result-row">
+    <strong>Telefonart:</strong>
+    ${escapeHTML(phoneType)}
+   </div>
+
+   <div class="result-row">
     <strong>Formatprüfung:</strong>
     <span class="${valid ? "valid" : "invalid"}">
      ${valid ? "✓ Formal gültig" : "✕ Nicht gültig oder unvollständig"}
@@ -271,13 +301,14 @@ document.getElementById("searchForm").addEventListener("submit", async event => 
    </div>
 
    <p class="small-note">
-    Diese Prüfung kontrolliert das Nummernformat.
-    Sie bestätigt nicht, dass die Nummer tatsächlich vergeben
-    oder erreichbar ist.
+    Die Telefonart wird anhand des Nummernplans geschätzt.
+    Sie bestätigt weder die tatsächliche Vergabe noch die
+    Erreichbarkeit oder den aktuellen Nutzer der Nummer.
    </p>
   `;
 
  } catch (error) {
+  console.error("Telefonprüfung fehlgeschlagen:", error);
   result.textContent =
    "Die Prüfung konnte nicht durchgeführt werden. Bitte überprüfe deine Internetverbindung.";
  } finally {
