@@ -5,58 +5,286 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Nexora Search</title>
+
+<link rel="stylesheet"
+ href="https://cdn.jsdelivr.net/npm/intl-tel-input@25.3.1/build/css/intlTelInput.css">
+
 <style>
 *{box-sizing:border-box}
+
 body{
- margin:0;background:#0b1020;color:white;
- font-family:Arial,sans-serif;min-height:100vh
+ margin:0;
+ background:#0b1020;
+ color:white;
+ font-family:Arial,sans-serif;
+ min-height:100vh
 }
+
 header{
- padding:24px 7%;border-bottom:1px solid #273047;
- font-size:24px;font-weight:bold
-}
-main{
- max-width:850px;margin:100px auto;padding:20px;
- text-align:center
-}
-h1{font-size:clamp(36px,6vw,56px)}
-p{color:#aab5ca;line-height:1.6}
-.search{display:flex;gap:10px;margin-top:35px;flex-wrap:wrap}
-input{
- flex:1;min-width:200px;padding:18px;
- border-radius:12px;border:1px solid #38435d;
- background:#151d32;color:white;font-size:16px
-}
-button{
- padding:18px 25px;border:0;border-radius:12px;
- background:#5575ed;color:white;cursor:pointer;
+ padding:24px 7%;
+ border-bottom:1px solid #273047;
+ font-size:24px;
  font-weight:bold
 }
+
+main{
+ max-width:850px;
+ margin:100px auto;
+ padding:20px;
+ text-align:center
+}
+
+h1{font-size:clamp(36px,6vw,56px)}
+
+p{color:#aab5ca;line-height:1.6}
+
+.search{
+ display:flex;
+ gap:10px;
+ margin-top:35px;
+ align-items:stretch
+}
+
+.phone-wrap{
+ flex:1;
+ min-width:0;
+ text-align:left
+}
+
+.iti{
+ width:100%
+}
+
+input{
+ width:100%;
+ min-width:0;
+ padding:18px;
+ border-radius:12px;
+ border:1px solid #38435d;
+ background:#151d32;
+ color:white;
+ font-size:16px
+}
+
+.iti input{
+ width:100%;
+ padding-left:85px!important;
+ background:#151d32;
+ color:white;
+ border:1px solid #38435d;
+ border-radius:12px;
+ height:58px
+}
+
+.iti__dropdown-content{
+ background:#151d32;
+ color:white;
+ border:1px solid #38435d
+}
+
+.iti__country{
+ color:white
+}
+
+.iti__country:hover,
+.iti__country.iti__highlight{
+ background:#273653
+}
+
+.iti__search-input{
+ background:#0d1426!important;
+ color:white!important;
+ border:1px solid #38435d!important
+}
+
+.iti__selected-country{
+ background:transparent!important
+}
+
+button{
+ padding:18px 25px;
+ border:0;
+ border-radius:12px;
+ background:#5575ed;
+ color:white;
+ cursor:pointer;
+ font-weight:bold;
+ font-size:15px
+}
+
+button:hover{background:#7190ff}
+
 #result{
- margin-top:30px;padding:20px;border-radius:12px;
- background:#151d32;color:#aab5ca;display:none
+ margin-top:30px;
+ padding:22px;
+ border-radius:12px;
+ background:#151d32;
+ color:#aab5ca;
+ display:none;
+ text-align:left;
+ line-height:1.8
+}
+
+.result-title{
+ color:white;
+ font-size:19px;
+ font-weight:bold;
+ margin-bottom:12px
+}
+
+.result-row{
+ padding:10px 0;
+ border-bottom:1px solid #293550
+}
+
+.valid{color:#8de0b1}
+.invalid{color:#ff9292}
+
+.small-note{
+ font-size:12px;
+ color:#8290ac;
+ margin-top:15px
+}
+
+@media(max-width:600px){
+ main{margin:55px auto}
+ .search{flex-direction:column}
+ button{width:100%}
 }
 </style>
 </head>
+
 <body>
+
 <header>✦ Nexora Search</header>
+
 <main>
 <h1>Entdecke mehr.</h1>
-<p>Deine intelligente Plattform für Recherche und öffentliche Informationen.</p>
-<div class="search">
-<input id="query" placeholder="Frage oder Telefonnummer eingeben...">
-<button onclick="search()">Suchen</button>
-</div>
+
+<p>
+Deine intelligente Plattform für Recherche und öffentliche Informationen.
+</p>
+
+<form class="search" id="searchForm">
+
+ <div class="phone-wrap">
+  <input
+   id="query"
+   type="tel"
+   placeholder="Telefonnummer eingeben..."
+   autocomplete="tel"
+   required
+  >
+ </div>
+
+ <button type="submit" id="searchButton">
+  Prüfen
+ </button>
+
+</form>
+
 <div id="result"></div>
+
+<div class="small-note">
+Internationale Telefonnummern werden unterstützt.
+</div>
 </main>
+
+<script src="https://cdn.jsdelivr.net/npm/intl-tel-input@25.3.1/build/js/intlTelInput.min.js"></script>
+
 <script>
-async function search(){
- const query=document.getElementById("query").value.trim();
- const result=document.getElementById("result");
- if(!query)return;
- result.style.display="block";
- result.textContent="Die Recherchefunktion wird vorbereitet.";
+const input = document.getElementById("query");
+const result = document.getElementById("result");
+const searchButton = document.getElementById("searchButton");
+
+const phoneInput = window.intlTelInput(input, {
+ initialCountry: "de",
+ nationalMode: false,
+ separateDialCode: false,
+ allowDropdown: true,
+ countrySearch: true,
+ autoPlaceholder: "polite",
+ formatAsYouType: true,
+ loadUtils: () => import(
+  "https://cdn.jsdelivr.net/npm/intl-tel-input@25.3.1/build/js/utils.js"
+ )
+});
+
+function escapeHTML(value) {
+ return String(value).replace(/[&<>"']/g, char => ({
+  "&":"&amp;",
+  "<":"&lt;",
+  ">":"&gt;",
+  '"':"&quot;",
+  "'":"&#39;"
+ })[char]);
 }
+
+document.getElementById("searchForm").addEventListener("submit", async event => {
+ event.preventDefault();
+
+ const number = input.value.trim();
+
+ if (!number) return;
+
+ result.style.display = "block";
+ result.textContent = "Telefonnummer wird überprüft …";
+ searchButton.disabled = true;
+
+ try {
+  await phoneInput.promise;
+
+  const country = phoneInput.getSelectedCountryData();
+  const valid = phoneInput.isValidNumber();
+  const international = valid
+   ? phoneInput.getNumber()
+   : number;
+
+  const countryName = country.name || "Unbekannt";
+  const countryCode = country.dialCode
+   ? "+" + country.dialCode
+   : "Nicht erkannt";
+
+  result.innerHTML = `
+   <div class="result-title">Ergebnis der Telefonnummern-Prüfung</div>
+
+   <div class="result-row">
+    <strong>Land:</strong>
+    ${escapeHTML(countryName)}
+   </div>
+
+   <div class="result-row">
+    <strong>Vorwahl:</strong>
+    ${escapeHTML(countryCode)}
+   </div>
+
+   <div class="result-row">
+    <strong>Telefonnummer:</strong>
+    ${escapeHTML(international)}
+   </div>
+
+   <div class="result-row">
+    <strong>Formatprüfung:</strong>
+    <span class="${valid ? "valid" : "invalid"}">
+     ${valid ? "✓ Formal gültig" : "✕ Nicht gültig oder unvollständig"}
+    </span>
+   </div>
+
+   <p class="small-note">
+    Diese Prüfung kontrolliert das Nummernformat.
+    Sie bestätigt nicht, dass die Nummer tatsächlich vergeben
+    oder erreichbar ist.
+   </p>
+  `;
+
+ } catch (error) {
+  result.textContent =
+   "Die Prüfung konnte nicht durchgeführt werden. Bitte überprüfe deine Internetverbindung.";
+ } finally {
+  searchButton.disabled = false;
+ }
+});
 </script>
+
 </body>
 </html>
