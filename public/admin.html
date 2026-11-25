@@ -3,126 +3,206 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Nexora Search – Admin</title>
 <style>
-* { box-sizing: border-box; }
-body {
-  margin: 0;
-  min-height: 100vh;
-  display: grid;
-  place-items: center;
-  background: #080d19;
-  color: #f1f5f9;
-  font-family: Arial, sans-serif;
-  padding: 20px;
-}
-.panel {
-  width: 100%;
-  max-width: 420px;
-  background: #111a2b;
-  border: 1px solid #263650;
-  border-radius: 18px;
-  padding: 30px;
-}
-h1 { margin-top: 0; }
-.subtitle { color: #94a3b8; }
-input {
-  width: 100%;
-  padding: 14px;
-  margin: 9px 0;
-  border-radius: 9px;
-  border: 1px solid #334155;
-  background: #080d19;
-  color: white;
-  font-size: 16px;
-}
-button {
-  width: 100%;
-  padding: 14px;
-  margin-top: 12px;
-  border: 0;
-  border-radius: 9px;
-  background: #3978ed;
-  color: white;
-  font-size: 16px;
-  cursor: pointer;
-}
-button:hover { background: #2863ce; }
-.message { color: #fca5a5; min-height: 22px; }
-.hidden { display: none; }
-.info {
-  padding: 14px;
-  margin: 12px 0;
-  border-radius: 9px;
-  background: #080d19;
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,sans-serif;background:#0b1020;color:#f4f6ff}
+button,input{font:inherit}
+button{cursor:pointer}
+.hidden{display:none!important}
+.login-wrap{min-height:100vh;display:grid;place-items:center;padding:20px}
+.login-card{width:100%;max-width:390px;background:#151d32;border:1px solid #28344f;border-radius:18px;padding:30px}
+h1{margin-top:0}
+.muted{color:#9ba9c5}
+input{width:100%;padding:13px;margin:8px 0 15px;background:#0d1426;border:1px solid #34415f;border-radius:9px;color:white}
+.primary{background:#5578ff;color:white;border:0;border-radius:9px;padding:12px 17px;font-weight:bold}
+.primary:hover{background:#7190ff}
+.error{color:#ff8b8b;margin-top:12px}
+.layout{min-height:100vh;display:flex}
+.sidebar{width:235px;background:#111a2e;border-right:1px solid #26324c;padding:25px 17px;display:flex;flex-direction:column}
+.brand{font-size:21px;font-weight:bold;margin-bottom:35px}
+.brand span{color:#7794ff}
+.nav-label{font-size:11px;color:#8290ac;text-transform:uppercase;letter-spacing:1px;margin:15px 10px}
+.nav-item{padding:12px;border-radius:9px;color:#cbd4e8;background:#202d49}
+.sidebar-bottom{margin-top:auto}
+.logout{width:100%;background:#27344f;color:#fff;border:0;border-radius:9px;padding:12px}
+.main{flex:1;padding:35px;min-width:0}
+.topbar{display:flex;justify-content:space-between;align-items:center;gap:15px;flex-wrap:wrap;margin-bottom:35px}
+.topbar h1{margin:0;font-size:27px}
+.account{background:#18243b;border:1px solid #2d3b59;border-radius:10px;padding:10px 14px;color:#dce5ff}
+.role{color:#91a9ff;font-size:12px;margin-left:8px}
+.subtitle{color:#98a6c2;margin-top:8px}
+.stats{display:grid;grid-template-columns:repeat(3,minmax(160px,1fr));gap:18px}
+.stat{background:#151f35;border:1px solid #2a3855;border-radius:15px;padding:23px}
+.stat-label{color:#aab7d0;font-size:14px}
+.stat-value{font-size:34px;font-weight:bold;margin-top:14px}
+.section{margin-top:30px;background:#151f35;border:1px solid #2a3855;border-radius:15px;padding:22px}
+.section h2{font-size:18px;margin-top:0}
+.status{color:#8de0b1}
+.refresh{background:#263653;color:white;border:1px solid #3b4d70;border-radius:9px;padding:10px 14px}
+.notice{color:#aab7d0;font-size:14px;line-height:1.6}
+@media(max-width:750px){
+.layout{display:block}
+.sidebar{width:100%;padding:15px;display:block}
+.brand{margin-bottom:15px}
+.sidebar-bottom{margin-top:15px}
+.main{padding:22px 15px}
+.stats{grid-template-columns:1fr}
 }
 </style>
 </head>
 <body>
-<div class="panel">
-  <div id="login">
-    <h1>Nexora Search</h1>
-    <p class="subtitle">Geschützter Administrationsbereich</p>
 
-    <form id="loginForm">
-      <input id="username" placeholder="Benutzername"
-        autocomplete="username" required maxlength="32">
-      <input id="password" type="password"
-        placeholder="Passwort" autocomplete="current-password"
-        required maxlength="128">
-      <button type="submit">Anmelden</button>
-    </form>
-    <p id="message" class="message"></p>
-  </div>
+<div id="loginScreen" class="login-wrap">
+  <form id="loginForm" class="login-card">
+    <div class="brand">NEXORA <span>SEARCH</span></div>
+    <h1>Admin Login</h1>
+    <p class="muted">Melde dich mit deinem Administratorkonto an.</p>
 
-  <div id="dashboard" class="hidden">
-    <h1>Admin-Dashboard</h1>
-    <p class="subtitle">Willkommen bei Nexora Search.</p>
-    <div class="info">
-      <strong>Benutzername:</strong>
-      <span id="adminName"></span>
+    <label for="username">Benutzername</label>
+    <input id="username" autocomplete="username" required>
+
+    <label for="password">Passwort</label>
+    <input id="password" type="password" autocomplete="current-password" required>
+
+    <button class="primary" id="loginButton" type="submit">Anmelden</button>
+    <div id="loginError" class="error"></div>
+  </form>
+</div>
+
+<div id="dashboard" class="layout hidden">
+  <aside class="sidebar">
+    <div class="brand">NEXORA <span>SEARCH</span></div>
+    <div class="nav-label">Verwaltung</div>
+    <div class="nav-item">▦ Übersicht</div>
+    <div class="sidebar-bottom">
+      <button class="logout" id="logoutButton">Abmelden</button>
     </div>
-    <div class="info">
-      <strong>Rolle:</strong>
-      <span id="adminRole"></span>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div>
+        <h1>Dashboard</h1>
+        <div class="subtitle">Willkommen in der Nexora-Verwaltung.</div>
+      </div>
+      <div class="account">
+        <span id="accountName">Admin</span>
+        <span class="role" id="accountRole"></span>
+      </div>
     </div>
-    <p class="subtitle">Deine Anmeldung ist aktiv.</p>
-    <button id="logoutButton">Abmelden</button>
-  </div>
+
+    <div class="topbar">
+      <h2>Systemübersicht</h2>
+      <button class="refresh" id="refreshButton">↻ Aktualisieren</button>
+    </div>
+
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-label">Administratoren insgesamt</div>
+        <div class="stat-value" id="totalAdmins">–</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Aktive Administratoren</div>
+        <div class="stat-value" id="activeAdmins">–</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Aktive Sitzungen</div>
+        <div class="stat-value" id="activeSessions">–</div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>Systemstatus</h2>
+      <p class="status" id="systemStatus">● Dashboard wird geladen …</p>
+      <p class="notice" id="dashboardMessage">
+        Die angezeigten Zahlen stammen aus deiner Nexora-Datenbank.
+      </p>
+    </div>
+  </main>
 </div>
 
 <script>
-const login = document.getElementById("login");
+const loginScreen = document.getElementById("loginScreen");
 const dashboard = document.getElementById("dashboard");
-const message = document.getElementById("message");
+const loginForm = document.getElementById("loginForm");
+const loginError = document.getElementById("loginError");
 
-function showDashboard(admin) {
-  login.classList.add("hidden");
-  dashboard.classList.remove("hidden");
-  document.getElementById("adminName").textContent = admin.username;
-  document.getElementById("adminRole").textContent = admin.role;
+function roleName(role) {
+  const roles = {
+    owner: "OWNER",
+    admin: "ADMIN",
+    moderator: "MODERATOR"
+  };
+  return roles[role] || role;
 }
 
-async function checkSession() {
+function showDashboard(admin) {
+  loginScreen.classList.add("hidden");
+  dashboard.classList.remove("hidden");
+  document.getElementById("accountName").textContent = admin.username;
+  document.getElementById("accountRole").textContent = roleName(admin.role);
+  loadDashboard();
+}
+
+async function loadDashboard() {
+  const status = document.getElementById("systemStatus");
+  const message = document.getElementById("dashboardMessage");
+
+  status.textContent = "● Daten werden geladen …";
+  message.textContent = "";
+
   try {
-    const response = await fetch("/api/admin/me");
-    if (!response.ok) return;
+    const response = await fetch("/api/admin/dashboard", {
+      credentials: "same-origin"
+    });
+
     const data = await response.json();
-    if (data.authenticated) showDashboard(data.admin);
-  } catch {
-    message.textContent = "Verbindung fehlgeschlagen.";
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        dashboard.classList.add("hidden");
+        loginScreen.classList.remove("hidden");
+        loginError.textContent = "Bitte melde dich erneut an.";
+        return;
+      }
+      throw new Error(data.error || "Dashboard konnte nicht geladen werden.");
+    }
+
+    document.getElementById("totalAdmins").textContent =
+      data.statistics.totalAdmins ?? 0;
+
+    document.getElementById("activeAdmins").textContent =
+      data.statistics.activeAdmins ?? 0;
+
+    document.getElementById("activeSessions").textContent =
+      data.statistics.activeSessions ?? 0;
+
+    status.textContent = "● Verbindung zur Datenbank erfolgreich";
+    status.className = "status";
+    message.textContent = "Die Statistiken wurden erfolgreich aktualisiert.";
+
+  } catch (error) {
+    status.textContent = "● Dashboard konnte nicht geladen werden";
+    status.style.color = "#ff8b8b";
+    message.textContent = error.message;
   }
 }
 
-document.getElementById("loginForm").addEventListener("submit", async event => {
+loginForm.addEventListener("submit", async (event) => {
   event.preventDefault();
-  message.textContent = "Anmeldung wird geprüft …";
+
+  const button = document.getElementById("loginButton");
+  button.disabled = true;
+  button.textContent = "Anmeldung …";
+  loginError.textContent = "";
 
   try {
     const response = await fetch("/api/admin/login", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {"Content-Type": "application/json"},
+      credentials: "same-origin",
       body: JSON.stringify({
         username: document.getElementById("username").value,
         password: document.getElementById("password").value
@@ -131,27 +211,53 @@ document.getElementById("loginForm").addEventListener("submit", async event => {
 
     const data = await response.json();
 
-    if (!response.ok || !data.success) {
-      message.textContent = "Benutzername oder Passwort falsch.";
-      return;
+    if (!response.ok) {
+      throw new Error(data.error || "Anmeldung fehlgeschlagen.");
     }
 
     showDashboard(data.admin);
-  } catch {
-    message.textContent = "Verbindungsfehler. Bitte erneut versuchen.";
+
+  } catch (error) {
+    loginError.textContent = error.message;
+  } finally {
+    button.disabled = false;
+    button.textContent = "Anmelden";
   }
 });
 
 document.getElementById("logoutButton").addEventListener("click", async () => {
   try {
-    await fetch("/api/admin/logout", { method: "POST" });
+    await fetch("/api/admin/logout", {
+      method: "POST",
+      credentials: "same-origin"
+    });
   } finally {
     dashboard.classList.add("hidden");
-    login.classList.remove("hidden");
-    document.getElementById("password").value = "";
-    message.textContent = "Du wurdest abgemeldet.";
+    loginScreen.classList.remove("hidden");
+    loginForm.reset();
+    loginError.textContent = "";
   }
 });
+
+document.getElementById("refreshButton").addEventListener("click", loadDashboard);
+
+async function checkSession() {
+  try {
+    const response = await fetch("/api/admin/me", {
+      credentials: "same-origin"
+    });
+
+    if (!response.ok) return;
+
+    const data = await response.json();
+
+    if (data.admin) {
+      showDashboard(data.admin);
+    }
+  } catch (error) {
+    console.error("Sitzung konnte nicht geprüft werden:", error);
+  }
+}
 
 checkSession();
 </script>
