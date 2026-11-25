@@ -1,0 +1,159 @@
+
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nexora Search – Admin</title>
+<style>
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  background: #080d19;
+  color: #f1f5f9;
+  font-family: Arial, sans-serif;
+  padding: 20px;
+}
+.panel {
+  width: 100%;
+  max-width: 420px;
+  background: #111a2b;
+  border: 1px solid #263650;
+  border-radius: 18px;
+  padding: 30px;
+}
+h1 { margin-top: 0; }
+.subtitle { color: #94a3b8; }
+input {
+  width: 100%;
+  padding: 14px;
+  margin: 9px 0;
+  border-radius: 9px;
+  border: 1px solid #334155;
+  background: #080d19;
+  color: white;
+  font-size: 16px;
+}
+button {
+  width: 100%;
+  padding: 14px;
+  margin-top: 12px;
+  border: 0;
+  border-radius: 9px;
+  background: #3978ed;
+  color: white;
+  font-size: 16px;
+  cursor: pointer;
+}
+button:hover { background: #2863ce; }
+.message { color: #fca5a5; min-height: 22px; }
+.hidden { display: none; }
+.info {
+  padding: 14px;
+  margin: 12px 0;
+  border-radius: 9px;
+  background: #080d19;
+}
+</style>
+</head>
+<body>
+<div class="panel">
+  <div id="login">
+    <h1>Nexora Search</h1>
+    <p class="subtitle">Geschützter Administrationsbereich</p>
+
+    <form id="loginForm">
+      <input id="username" placeholder="Benutzername"
+        autocomplete="username" required maxlength="32">
+      <input id="password" type="password"
+        placeholder="Passwort" autocomplete="current-password"
+        required maxlength="128">
+      <button type="submit">Anmelden</button>
+    </form>
+    <p id="message" class="message"></p>
+  </div>
+
+  <div id="dashboard" class="hidden">
+    <h1>Admin-Dashboard</h1>
+    <p class="subtitle">Willkommen bei Nexora Search.</p>
+    <div class="info">
+      <strong>Benutzername:</strong>
+      <span id="adminName"></span>
+    </div>
+    <div class="info">
+      <strong>Rolle:</strong>
+      <span id="adminRole"></span>
+    </div>
+    <p class="subtitle">Deine Anmeldung ist aktiv.</p>
+    <button id="logoutButton">Abmelden</button>
+  </div>
+</div>
+
+<script>
+const login = document.getElementById("login");
+const dashboard = document.getElementById("dashboard");
+const message = document.getElementById("message");
+
+function showDashboard(admin) {
+  login.classList.add("hidden");
+  dashboard.classList.remove("hidden");
+  document.getElementById("adminName").textContent = admin.username;
+  document.getElementById("adminRole").textContent = admin.role;
+}
+
+async function checkSession() {
+  try {
+    const response = await fetch("/api/admin/me");
+    if (!response.ok) return;
+    const data = await response.json();
+    if (data.authenticated) showDashboard(data.admin);
+  } catch {
+    message.textContent = "Verbindung fehlgeschlagen.";
+  }
+}
+
+document.getElementById("loginForm").addEventListener("submit", async event => {
+  event.preventDefault();
+  message.textContent = "Anmeldung wird geprüft …";
+
+  try {
+    const response = await fetch("/api/admin/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        username: document.getElementById("username").value,
+        password: document.getElementById("password").value
+      })
+    });
+
+    const data = await response.json();
+
+    if (!response.ok || !data.success) {
+      message.textContent = "Benutzername oder Passwort falsch.";
+      return;
+    }
+
+    showDashboard(data.admin);
+  } catch {
+    message.textContent = "Verbindungsfehler. Bitte erneut versuchen.";
+  }
+});
+
+document.getElementById("logoutButton").addEventListener("click", async () => {
+  try {
+    await fetch("/api/admin/logout", { method: "POST" });
+  } finally {
+    dashboard.classList.add("hidden");
+    login.classList.remove("hidden");
+    document.getElementById("password").value = "";
+    message.textContent = "Du wurdest abgemeldet.";
+  }
+});
+
+checkSession();
+</script>
+</body>
+</html>
