@@ -6,10 +6,7 @@ const COOKIE_NAME = "nexora_session";
 function toBase64Url(bytes) {
   let binary = "";
   for (const byte of bytes) binary += String.fromCharCode(byte);
-  return btoa(binary)
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_")
-    .replace(/=+$/, "");
+  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
 
 function fromBase64Url(value) {
@@ -45,11 +42,8 @@ async function verifyPassword(password, stored) {
         iterations < 10000 || iterations > 1000000) return false;
 
     const key = await crypto.subtle.importKey(
-      "raw",
-      new TextEncoder().encode(password),
-      "PBKDF2",
-      false,
-      ["deriveBits"]
+      "raw", new TextEncoder().encode(password),
+      "PBKDF2", false, ["deriveBits"]
     );
 
     const bits = await crypto.subtle.deriveBits({
@@ -59,16 +53,13 @@ async function verifyPassword(password, stored) {
       hash: "SHA-256"
     }, key, 256);
 
-    return await sameBytes(
-      new Uint8Array(bits),
-      fromBase64Url(hashText)
-    );
+    return sameBytes(new Uint8Array(bits), fromBase64Url(hashText));
   } catch {
     return false;
   }
 }
 
-async function sameBytes(a, b) {
+function sameBytes(a, b) {
   if (a.length !== b.length) return false;
   let difference = 0;
   for (let i = 0; i < a.length; i++) difference |= a[i] ^ b[i];
@@ -86,8 +77,7 @@ async function sameSecret(a, b) {
 
 async function hashToken(token) {
   const digest = await crypto.subtle.digest(
-    "SHA-256",
-    new TextEncoder().encode(token)
+    "SHA-256", new TextEncoder().encode(token)
   );
   return toBase64Url(new Uint8Array(digest));
 }
@@ -98,13 +88,16 @@ function randomToken() {
 
 function getCookie(request, name) {
   const cookies = request.headers.get("Cookie") || "";
+
   for (const item of cookies.split(";")) {
     const index = item.indexOf("=");
     if (index < 0) continue;
+
     if (item.slice(0, index).trim() === name) {
       return item.slice(index + 1).trim();
     }
   }
+
   return "";
 }
 
@@ -139,12 +132,14 @@ async function getAdmin(request, env) {
 }
 
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     const url = new URL(request.url);
 
+    // Gesundheitsprüfung
     if (url.pathname === "/api/health") {
       try {
         await env.DB.prepare("SELECT 1 AS ok").first();
+
         return json({
           success: true,
           website: "Nexora Search",
@@ -237,24 +232,24 @@ export default {
           return json({ error: "Invalid username or password" }, 401);
         }
 
-       
-const token = randomToken();
-const tokenHash = await hashToken(token);
-const sessionId = crypto.randomUUID();
-const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+        const token = randomToken();
+        const tokenHash = await hashToken(token);
+        const sessionId = crypto.randomUUID();
+        const expiresAt = new Date(
+          Date.now() + 7 * 24 * 60 * 60 * 1000
+        ).toISOString();
 
-await env.DB.prepare(`
-  INSERT INTO admin_sessions
-    (id, admin_id, token_hash, expires_at, ip_address)
-  VALUES (?, ?, ?, ?, ?)
-`).bind(
-  sessionId,
-  admin.id,
-  tokenHash,
-  expiresAt,
-  request.headers.get("CF-Connecting-IP") || "Unbekannt"
-).run();
-
+        await env.DB.prepare(`
+          INSERT INTO admin_sessions
+            (id, admin_id, token_hash, expires_at, ip_address)
+          VALUES (?, ?, ?, ?, ?)
+        `).bind(
+          sessionId,
+          admin.id,
+          tokenHash,
+          expiresAt,
+          request.headers.get("CF-Connecting-IP") || "Unbekannt"
+        ).run();
 
         return json({
           success: true,
@@ -270,7 +265,7 @@ await env.DB.prepare(`
       }
     }
 
-    // Prüfen, ob ein Admin angemeldet ist
+    // Admin-Sitzung prüfen
     if (url.pathname === "/api/admin/me") {
       if (request.method !== "GET") {
         return json({ error: "Method not allowed" }, 405);
@@ -278,6 +273,7 @@ await env.DB.prepare(`
 
       try {
         const admin = await getAdmin(request, env);
+
         if (!admin) {
           return json({ authenticated: false }, 401);
         }
@@ -314,7 +310,7 @@ await env.DB.prepare(`
       }
     }
 
-    // Geschützte Dashboard-Daten
+    // Dashboard-Statistiken
     if (url.pathname === "/api/admin/dashboard") {
       if (request.method !== "GET") {
         return json({ error: "Method not allowed" }, 405);
@@ -363,8 +359,7 @@ await env.DB.prepare(`
       }
     }
 
-
-    // Aktive Sitzungen – ausschließlich für Owner
+    // Aktive Admin-Sitzungen – nur Owner
     if (url.pathname === "/api/admin/sessions") {
       if (request.method !== "GET") {
         return json({ error: "Method not allowed" }, 405);
@@ -403,6 +398,70 @@ await env.DB.prepare(`
       }
     }
 
-    return env.ASSETS.fetch(request);
+    // Besucherstatistik – ausschließlich für Owner
+    if (url.pathname === "/api/admin/visitors") {
+      if (request.method !== "GET") {
+        return json({ error: "Method not allowed" }, 405);
+      }
+
+      try {
+        const admin = await getAdmin(request, env);
+
+        if (!admin) {
+          return json({ error: "Nicht angemeldet" }, 401);
+        }
+
+        if (admin.role !== "owner") {
+          return json({ error: "Nur der Owner darf Besucherstatistiken ansehen" }, 403);
+        }
+
+        const [activeViews, totalViews] = await Promise.all([
+          env.DB.prepare(`
+            SELECT COUNT(*) AS total
+            FROM website_page_views
+            WHERE visited_at >= datetime('now', '-5 minutes')
+          `).first(),
+
+          env.DB.prepare(`
+            SELECT COUNT(*) AS total
+            FROM website_page_views
+          `).first()
+        ]);
+
+        return json({
+          success: true,
+          activePageViews: activeViews.total || 0,
+          totalPageViews: totalViews.total || 0,
+          measuredWithinMinutes: 5
+        });
+      } catch {
+        return json({ error: "Besucherstatistik konnte nicht geladen werden" }, 500);
+      }
+    }
+
+    // Öffentliche Website ausliefern
+    const response = await env.ASSETS.fetch(request);
+
+    // Erfolgreiche öffentliche HTML-Aufrufe zählen.
+    // Adminseite, APIs und statische Dateien werden ausgeschlossen.
+    const isPublicPage =
+      request.method === "GET" &&
+      url.pathname !== "/admin.html" &&
+      !url.pathname.startsWith("/api/") &&
+      response.ok &&
+      (response.headers.get("Content-Type") || "").includes("text/html");
+
+    if (isPublicPage) {
+      ctx.waitUntil(
+        env.DB.prepare(`
+          INSERT INTO website_page_views (id)
+          VALUES (?)
+        `).bind(crypto.randomUUID()).run().catch(error => {
+          console.error("Besucherzählung fehlgeschlagen:", error);
+        })
+      );
+    }
+
+    return response;
   }
 };
