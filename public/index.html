@@ -236,6 +236,178 @@ function getPhoneType(type) {
  return types[type] || "Unbekannt";
 }
 
+/*
+ Deutsche Ortsvorwahlen.
+ Es werden zunächst zahlreiche größere Städte erkannt.
+ Längere Vorwahlen werden vor kürzeren geprüft.
+*/
+const germanAreaCodes = {
+ "30": "Berlin",
+ "40": "Hamburg",
+ "69": "Frankfurt am Main",
+ "89": "München",
+ "221": "Köln",
+ "211": "Düsseldorf",
+ "711": "Stuttgart",
+ "231": "Dortmund",
+ "201": "Essen",
+ "421": "Bremen",
+ "511": "Hannover",
+ "341": "Leipzig",
+ "351": "Dresden",
+ "911": "Nürnberg",
+ "251": "Münster",
+ "228": "Bonn",
+ "731": "Ulm",
+ "721": "Karlsruhe",
+ "761": "Freiburg im Breisgau",
+ "821": "Augsburg",
+ "931": "Würzburg",
+ "941": "Regensburg",
+ "951": "Bamberg",
+ "921": "Bayreuth",
+ "541": "Osnabrück",
+ "541": "Osnabrück",
+ "541": "Osnabrück",
+ "441": "Oldenburg",
+ "451": "Lübeck",
+ "381": "Rostock",
+ "391": "Magdeburg",
+ "361": "Erfurt",
+ "661": "Fulda",
+ "561": "Kassel",
+ "551": "Göttingen",
+ "681": "Saarbrücken",
+ "651": "Trier",
+ "261": "Koblenz",
+ "241": "Aachen",
+ "261": "Koblenz",
+ "271": "Siegen",
+ "271": "Siegen",
+ "5251": "Paderborn",
+ "521": "Bielefeld",
+ "531": "Braunschweig",
+ "541": "Osnabrück",
+ "471": "Bremerhaven",
+ "471": "Bremerhaven",
+ "381": "Rostock",
+ "451": "Lübeck",
+ "431": "Kiel",
+ "471": "Bremerhaven",
+ "201": "Essen",
+ "203": "Duisburg",
+ "2041": "Bottrop",
+ "208": "Oberhausen",
+ "209": "Gelsenkirchen",
+ "202": "Wuppertal",
+ "212": "Solingen",
+ "214": "Leverkusen",
+ "2151": "Krefeld",
+ "2161": "Mönchengladbach",
+ "2131": "Neuss",
+ "2361": "Recklinghausen",
+ "234": "Bochum",
+ "2351": "Lüdenscheid",
+ "2365": "Marl",
+ "2381": "Hamm",
+ "241": "Aachen",
+ "2421": "Düren",
+ "251": "Münster",
+ "2521": "Warendorf",
+ "261": "Koblenz",
+ "271": "Siegen",
+ "281": "Wesel",
+ "291": "Meschede",
+ "331": "Potsdam",
+ "335": "Frankfurt (Oder)",
+ "341": "Leipzig",
+ "345": "Halle (Saale)",
+ "351": "Dresden",
+ "355": "Cottbus",
+ "361": "Erfurt",
+ "365": "Gera",
+ "371": "Chemnitz",
+ "381": "Rostock",
+ "391": "Magdeburg",
+ "421": "Bremen",
+ "431": "Kiel",
+ "441": "Oldenburg",
+ "451": "Lübeck",
+ "461": "Flensburg",
+ "471": "Bremerhaven",
+ "481": "Heide",
+ "511": "Hannover",
+ "521": "Bielefeld",
+ "531": "Braunschweig",
+ "541": "Osnabrück",
+ "551": "Göttingen",
+ "561": "Kassel",
+ "571": "Minden",
+ "581": "Uelzen",
+ "591": "Lingen",
+ "611": "Wiesbaden",
+ "6151": "Darmstadt",
+ "621": "Mannheim / Ludwigshafen",
+ "6251": "Bensheim",
+ "631": "Kaiserslautern",
+ "641": "Gießen",
+ "651": "Trier",
+ "661": "Fulda",
+ "681": "Saarbrücken",
+ "691": "Frankfurt am Main",
+ "711": "Stuttgart",
+ "721": "Karlsruhe",
+ "731": "Ulm",
+ "741": "Rottweil",
+ "751": "Ravensburg",
+ "761": "Freiburg im Breisgau",
+ "771": "Donaueschingen",
+ "781": "Offenburg",
+ "791": "Schwäbisch Hall",
+ "821": "Augsburg",
+ "831": "Kempten",
+ "841": "Ingolstadt",
+ "851": "Passau",
+ "861": "Traunstein",
+ "871": "Landshut",
+ "881": "Weilheim",
+ "891": "München",
+ "911": "Nürnberg",
+ "921": "Bayreuth",
+ "931": "Würzburg",
+ "941": "Regensburg",
+ "951": "Bamberg",
+ "961": "Weiden",
+ "971": "Bad Kissingen"
+};
+
+function findGermanCity(phoneNumber) {
+ const digits = phoneNumber.replace(/\D/g, "");
+
+ // Erwartet eine internationale deutsche Nummer mit +49.
+ if (!digits.startsWith("49")) {
+  return null;
+ }
+
+ // Die deutsche Landesvorwahl entfernen.
+ const nationalNumber = digits.substring(2);
+
+ // Längste passende Ortsvorwahl zuerst prüfen.
+ const areaCodes = Object.keys(germanAreaCodes)
+  .sort((a, b) => b.length - a.length);
+
+ for (const areaCode of areaCodes) {
+  if (nationalNumber.startsWith(areaCode)) {
+   return {
+    city: germanAreaCodes[areaCode],
+    areaCode: "0" + areaCode
+   };
+  }
+ }
+
+ return null;
+}
+
 document.getElementById("searchForm").addEventListener("submit", async event => {
  event.preventDefault();
 
@@ -262,10 +434,30 @@ document.getElementById("searchForm").addEventListener("submit", async event => 
    ? "+" + country.dialCode
    : "Nicht erkannt";
 
+  let numberType = -1;
   let phoneType = "Nicht bestimmbar";
 
   if (valid) {
-   phoneType = getPhoneType(phoneInput.getNumberType());
+   numberType = phoneInput.getNumberType();
+   phoneType = getPhoneType(numberType);
+  }
+
+  let cityResult = "Keine verlässliche Stadtzuordnung möglich";
+  let areaCodeResult = "Nicht ermittelt";
+
+  if (valid && country.iso2 === "de" && numberType === 0) {
+   const location = findGermanCity(international);
+
+   if (location) {
+    cityResult = location.city;
+    areaCodeResult = location.areaCode;
+   } else {
+    cityResult = "Ortsnetz nicht in der eingebauten Liste";
+   }
+  } else if (valid && country.iso2 === "de" && numberType === 1) {
+   cityResult = "Mobilfunknummer – keine feste Stadtzuordnung";
+  } else if (valid && country.iso2 !== "de") {
+   cityResult = "Stadterkennung derzeit nur für Deutschland";
   }
 
   result.innerHTML = `
@@ -279,7 +471,7 @@ document.getElementById("searchForm").addEventListener("submit", async event => 
    </div>
 
    <div class="result-row">
-    <strong>Vorwahl:</strong>
+    <strong>Ländervorwahl:</strong>
     ${escapeHTML(countryCode)}
    </div>
 
@@ -294,6 +486,16 @@ document.getElementById("searchForm").addEventListener("submit", async event => 
    </div>
 
    <div class="result-row">
+    <strong>Stadt / Ortsnetz:</strong>
+    ${escapeHTML(cityResult)}
+   </div>
+
+   <div class="result-row">
+    <strong>Erkannte Ortsvorwahl:</strong>
+    ${escapeHTML(areaCodeResult)}
+   </div>
+
+   <div class="result-row">
     <strong>Formatprüfung:</strong>
     <span class="${valid ? "valid" : "invalid"}">
      ${valid ? "✓ Formal gültig" : "✕ Nicht gültig oder unvollständig"}
@@ -301,9 +503,10 @@ document.getElementById("searchForm").addEventListener("submit", async event => 
    </div>
 
    <p class="small-note">
-    Die Telefonart wird anhand des Nummernplans geschätzt.
-    Sie bestätigt weder die tatsächliche Vergabe noch die
-    Erreichbarkeit oder den aktuellen Nutzer der Nummer.
+    Die Stadt wird bei deutschen Festnetznummern anhand der
+    Ortsvorwahl geschätzt. Die Zuordnung ist nicht vollständig.
+    Sie zeigt weder den aktuellen Standort noch die Adresse oder
+    den Aufenthaltsort einer Person an.
    </p>
   `;
 
